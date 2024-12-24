@@ -7,7 +7,66 @@ import {
   getUserCrosswordProgressFromDB,
   updateUserCrosswordProgressInDB,
 } from "../models/crosswords.js";
-import { validationResult } from "express-validator";
+import {
+  getAllDictionariesFromDB,
+  postDictionaryInDB,
+  deleteDictionaryFromDB
+} from '../models/dictionary.js';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Получение всех словарей
+export const getAllDictionaries = async (req, res) => {
+  try {
+    const dictionaries = await getAllDictionariesFromDB();
+    res.json(dictionaries);
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка при получении словарей' });
+  }
+};
+
+// Загрузка нового словаря
+export const postDictionary = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const file = req.file;
+
+    if (!name || !file) {
+      return res.status(400).json({ message: 'Необходимо предоставить название и файл словаря' });
+    }
+
+    const filePath = path.resolve(file.path);
+    const fileContent = await fs.readFile(filePath, 'utf8');
+    const jsonData = JSON.parse(fileContent);
+
+    const dictionary = await postDictionaryInDB(name, jsonData);
+
+    // Удаляем временный файл после прочтения
+    await fs.unlink(filePath);
+
+    res.status(201).json(dictionary);
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка при загрузке словаря' });
+  }
+};
+
+// Удаление словаря
+export const deleteDictionary = async (req, res) => {
+  try {
+    const dictionaryId = req.params.id;
+    console.log(dictionaryId);
+    const dictionary = await deleteDictionaryFromDB(dictionaryId);
+    console.log(dictionary);
+    if (!dictionary) {
+      return res.status(404).json({ message: 'Словарь не найден' });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: 'Ошибка при удалении словаря' });
+  }
+};
+
 
 // Получить ID пользователя
 export const getUserID = async (req, res) => {
@@ -79,7 +138,6 @@ export const deleteCrosswordFromPublicLibrary = async (req, res) => {
     const deletedEntry = await deleteCrosswordFromPublicLibraryInDB(
       crosswordId
     );
-    console.log(deletedEntry)
     res.status(200).json(deletedEntry);
   } catch (error) {
     console.error("Error deleting crossword from library: ", error);
