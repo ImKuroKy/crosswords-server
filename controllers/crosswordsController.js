@@ -1,11 +1,11 @@
 import {
-  getUserIdFromDB,
   getCrosswordsFromDB,
   getUserCrosswordsFromDB,
   addCrosswordToLibraryInDB,
-  deleteCrosswordFromLibraryInDB,
+  deleteCrosswordFromUserLibraryInDB,
+  deleteCrosswordFromPublicLibraryInDB,
   getUserCrosswordProgressFromDB,
-  updateUserCrosswordProgressInDB
+  updateUserCrosswordProgressInDB,
 } from "../models/crosswords.js";
 import { validationResult } from "express-validator";
 
@@ -16,7 +16,7 @@ export const getUserID = async (req, res) => {
     res.status(200).json({ userId });
   } catch (error) {
     console.error("Error fetching user ID: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -27,7 +27,7 @@ export const getCrosswords = async (req, res) => {
     res.status(200).json(crosswords);
   } catch (error) {
     console.error("Error fetching crosswords: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -39,17 +39,12 @@ export const getUserCrosswords = async (req, res) => {
     res.status(200).json(crosswords);
   } catch (error) {
     console.error("Error fetching user crosswords: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // Добавить кроссворд в библиотеку пользователя
 export const addCrosswordToLibrary = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   try {
     const userId = req.user.userId;
     const crosswordId = req.body.id;
@@ -57,25 +52,38 @@ export const addCrosswordToLibrary = async (req, res) => {
     res.status(201).json(newEntry);
   } catch (error) {
     console.error("Error adding crossword to library: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // Удалить кроссворд из библиотеки пользователя
-export const deleteCrosswordFromLibrary = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
+export const deleteCrosswordFromUserLibrary = async (req, res) => {
   try {
     const userId = req.user.userId;
     const crosswordId = req.body.id;
-    const deletedEntry = await deleteCrosswordFromLibraryInDB(userId, crosswordId);
+    const deletedEntry = await deleteCrosswordFromUserLibraryInDB(
+      userId,
+      crosswordId
+    );
     res.status(200).json(deletedEntry);
   } catch (error) {
     console.error("Error deleting crossword from library: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Удалить кроссворд из общей библиотеки
+export const deleteCrosswordFromPublicLibrary = async (req, res) => {
+  try {
+    const crosswordId = req.body.id;
+    const deletedEntry = await deleteCrosswordFromPublicLibraryInDB(
+      crosswordId
+    );
+    console.log(deletedEntry)
+    res.status(200).json(deletedEntry);
+  } catch (error) {
+    console.error("Error deleting crossword from library: ", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -87,7 +95,7 @@ export const getUserCrosswordProgress = async (req, res) => {
     res.status(200).json(progress);
   } catch (error) {
     console.error("Error fetching crossword progress: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -96,10 +104,13 @@ export const updateUserCrosswordProgress = async (req, res) => {
   try {
     const userCrosswordId = req.params.id;
     const progress = req.body.progress;
-    const updatedProgress = await updateUserCrosswordProgressInDB(userCrosswordId, progress);
+    const updatedProgress = await updateUserCrosswordProgressInDB(
+      userCrosswordId,
+      progress
+    );
     res.status(200).json(updatedProgress);
   } catch (error) {
     console.error("Error updating crossword progress: ", error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -31,7 +31,10 @@ export const addCrosswordToLibraryInDB = async (userId, crosswordId) => {
 };
 
 // Удалить кроссворд из библиотеки пользователя
-export const deleteCrosswordFromLibraryInDB = async (userId, crosswordId) => {
+export const deleteCrosswordFromUserLibraryInDB = async (
+  userId,
+  crosswordId
+) => {
   const query = `
     DELETE FROM "crosswords"."user_crosswords"
     WHERE user_id = $1 AND crossword_id = $2
@@ -41,15 +44,30 @@ export const deleteCrosswordFromLibraryInDB = async (userId, crosswordId) => {
   return result.rows[0];
 };
 
+// Удалить кроссворд из общей библиотеки
+export const deleteCrosswordFromPublicLibraryInDB = async (crosswordId) => {
+  const query = `
+    DELETE FROM "crosswords"."crosswords_public"
+    WHERE crossword_id = $1
+    RETURNING crossword_id
+  `;
+  const result = await pool.query(query, [crosswordId]);
+  return result.rows[0];
+};
+
 // Получить прогресс пользователя по кроссворду
 export const getUserCrosswordProgressFromDB = async (userCrosswordId) => {
-  const query = 'SELECT * FROM "crosswords"."crossword_progress" WHERE user_crossword_id = $1';
+  const query =
+    'SELECT * FROM "crosswords"."crossword_progress" WHERE user_crossword_id = $1';
   const result = await pool.query(query, [userCrosswordId]);
   return result.rows[0];
 };
 
 // Обновить прогресс пользователя по кроссворду
-export const updateUserCrosswordProgressInDB = async (userCrosswordId, progress) => {
+export const updateUserCrosswordProgressInDB = async (
+  userCrosswordId,
+  progress
+) => {
   const query = `
     INSERT INTO "crosswords"."crossword_progress" (user_crossword_id, progress)
     VALUES ($1, $2)
