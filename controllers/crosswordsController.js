@@ -9,11 +9,12 @@ import {
 } from "../models/crosswords.js";
 import {
   getAllDictionariesFromDB,
+  getDictionaryContentByNameFromDB,
   postDictionaryInDB,
-  deleteDictionaryFromDB
-} from '../models/dictionary.js';
-import fs from 'fs/promises';
-import path from 'path';
+  deleteDictionaryFromDB,
+} from "../models/dictionary.js";
+import fs from "fs/promises";
+import path from "path";
 
 // Получение всех словарей
 export const getAllDictionaries = async (req, res) => {
@@ -21,7 +22,23 @@ export const getAllDictionaries = async (req, res) => {
     const dictionaries = await getAllDictionariesFromDB();
     res.json(dictionaries);
   } catch (error) {
-    res.status(500).json({ message: 'Ошибка при получении словарей' });
+    res.status(500).json({ message: "Ошибка при получении словарей" });
+  }
+};
+
+// Получение содержимого словаря по имени
+export const getDictionaryByName = async (req, res) => {
+  const { name } = req.params; // Получаем имя словаря из параметров URL
+  try {
+    const content = await getDictionaryContentByNameFromDB(name); // Запросим только content
+    if (content) {
+      res.json({ content }); // Отправляем содержимое словаря клиенту
+    } else {
+      res.status(404).json({ message: "Словарь не найден" }); // Если словарь не найден
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Ошибка при получении словаря" });
   }
 };
 
@@ -32,11 +49,13 @@ export const postDictionary = async (req, res) => {
     const file = req.file;
 
     if (!name || !file) {
-      return res.status(400).json({ message: 'Необходимо предоставить название и файл словаря' });
+      return res
+        .status(400)
+        .json({ message: "Необходимо предоставить название и файл словаря" });
     }
 
     const filePath = path.resolve(file.path);
-    const fileContent = await fs.readFile(filePath, 'utf8');
+    const fileContent = await fs.readFile(filePath, "utf8");
     const jsonData = JSON.parse(fileContent);
 
     const dictionary = await postDictionaryInDB(name, jsonData);
@@ -46,7 +65,7 @@ export const postDictionary = async (req, res) => {
 
     res.status(201).json(dictionary);
   } catch (error) {
-    res.status(500).json({ message: 'Ошибка при загрузке словаря' });
+    res.status(500).json({ message: "Ошибка при загрузке словаря" });
   }
 };
 
@@ -54,19 +73,16 @@ export const postDictionary = async (req, res) => {
 export const deleteDictionary = async (req, res) => {
   try {
     const dictionaryId = req.params.id;
-    console.log(dictionaryId);
     const dictionary = await deleteDictionaryFromDB(dictionaryId);
-    console.log(dictionary);
     if (!dictionary) {
-      return res.status(404).json({ message: 'Словарь не найден' });
+      return res.status(404).json({ message: "Словарь не найден" });
     }
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: 'Ошибка при удалении словаря' });
+    res.status(500).json({ message: "Ошибка при удалении словаря" });
   }
 };
-
 
 // Получить ID пользователя
 export const getUserID = async (req, res) => {

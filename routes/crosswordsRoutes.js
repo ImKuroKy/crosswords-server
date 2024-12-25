@@ -9,6 +9,7 @@ import {
   getUserCrosswordProgress,
   updateUserCrosswordProgress,
   getAllDictionaries,
+  getDictionaryByName,
   postDictionary,
   deleteDictionary
 } from '../controllers/crosswordsController.js';
@@ -28,6 +29,7 @@ router.get('/user/library/progress/:id', authenticateJWT, getUserCrosswordProgre
 router.put('/user/library/progress/:id', authenticateJWT, updateUserCrosswordProgress);
 
 router.get('/dictionaries', authenticateJWT, getAllDictionaries);
+router.get('/dictionaries/:name', authenticateJWT, getDictionaryByName);
 router.post('/dictionaries', authenticateJWT, upload.single('file'), postDictionary);
 router.delete('/dictionaries/:id', authenticateJWT, deleteDictionary);
 
