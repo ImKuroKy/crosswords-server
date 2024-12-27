@@ -12,6 +12,7 @@ yarn-error.log*
 .env
 
 # Output directories
+uploads/
 dist/
 build/
 out/

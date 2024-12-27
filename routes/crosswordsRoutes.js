@@ -1,9 +1,11 @@
 import express from 'express';
 import {
+  getCrosswordToPlayById,
   getUserID,
   getCrosswords,
   getUserCrosswords,
   addCrosswordToLibrary,
+  addCrosswordToPublicLibrary,
   deleteCrosswordFromUserLibrary,
   deleteCrosswordFromPublicLibrary,
   getUserCrosswordProgress,
@@ -19,6 +21,8 @@ import multer from 'multer';
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
+router.post('/add', authenticateJWT, addCrosswordToPublicLibrary);
+router.get('/play/:crosswordId', authenticateJWT, getCrosswordToPlayById);
 router.get('/user', authenticateJWT, getUserID);
 router.get('/library', authenticateJWT, getCrosswords);
 router.delete('/library', authenticateJWT, deleteCrosswordFromPublicLibrary);

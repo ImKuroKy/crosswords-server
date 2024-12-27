@@ -7,6 +7,13 @@ export const getCrosswordsFromDB = async () => {
   return result.rows;
 };
 
+// Получить кроссворд по id
+export const getCrosswordToPlayByIdFromDB = async (crosswordId) => {
+  const query = 'SELECT "content" FROM "crosswords"."crosswords_public" WHERE crossword_id = $1';
+  const result = await pool.query(query, [crosswordId]);
+  return result.rows[0];
+};
+
 // Получить кроссворды пользователя
 export const getUserCrosswordsFromDB = async (userId) => {
   const query = `
@@ -28,6 +35,27 @@ export const addCrosswordToLibraryInDB = async (userId, crosswordId) => {
   `;
   const result = await pool.query(query, [userId, crosswordId]);
   return result.rows[0];
+};
+
+// Добавить кроссворд в библиотеку пользователя
+export const saveCrosswordToPublicLibraryDB = async (crosswordData) => {
+  const dictionaryName = crosswordData.title; // Извлекаем название кроссворда из JSON
+  const content = crosswordData; // Полный JSON объект
+
+  const query = `
+    INSERT INTO "crosswords"."crosswords_public" (title, content)
+    VALUES ($1, $2)
+    RETURNING crossword_id
+  `;
+  const values = [dictionaryName, content];
+
+  try {
+    const result = await pool.query(query, values);
+    return result.rows[0].dictionary_id;
+  } catch (error) {
+    console.error('Ошибка при сохранении кроссворда:', error);
+    throw error;
+  }
 };
 
 // Удалить кроссворд из библиотеки пользователя

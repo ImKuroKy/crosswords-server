@@ -1,7 +1,9 @@
 import {
+  getCrosswordToPlayByIdFromDB,
   getCrosswordsFromDB,
   getUserCrosswordsFromDB,
   addCrosswordToLibraryInDB,
+  saveCrosswordToPublicLibraryDB,
   deleteCrosswordFromUserLibraryInDB,
   deleteCrosswordFromPublicLibraryInDB,
   getUserCrosswordProgressFromDB,
@@ -25,6 +27,19 @@ export const getAllDictionaries = async (req, res) => {
     res.status(500).json({ message: "Ошибка при получении словарей" });
   }
 };
+
+// Получение кроссворда по Id
+export const getCrosswordToPlayById = async (req, res) => {
+  const crosswordId = req.params.crosswordId;  // Получаем ID из параметров
+  try {
+    const crossword = await getCrosswordToPlayByIdFromDB(crosswordId);
+    res.json({ crossword });
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка при получении кроссворда" });
+    console.log(error);
+  }
+};
+
 
 // Получение содержимого словаря по имени
 export const getDictionaryByName = async (req, res) => {
@@ -66,6 +81,7 @@ export const postDictionary = async (req, res) => {
     res.status(201).json(dictionary);
   } catch (error) {
     res.status(500).json({ message: "Ошибка при загрузке словаря" });
+    console.log(error);
   }
 };
 
@@ -128,6 +144,19 @@ export const addCrosswordToLibrary = async (req, res) => {
   } catch (error) {
     console.error("Error adding crossword to library: ", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Добавить кроссворд в библиотеку пользователя
+export const addCrosswordToPublicLibrary = async (req, res) => {
+  const crosswordData = req.body;
+
+  try {
+    const dictionaryId = await saveCrosswordToPublicLibraryDB(crosswordData);
+    res.status(201).json({ message: 'Кроссворд успешно сохранен', dictionaryId });
+  } catch (error) {
+    console.error('Ошибка при сохранении кроссворда:', error);
+    res.status(500).json({ error: 'Ошибка при сохранении кроссворда' });
   }
 };
 
