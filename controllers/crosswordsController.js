@@ -8,6 +8,8 @@ import {
   deleteCrosswordFromPublicLibraryInDB,
   getUserCrosswordProgressFromDB,
   updateUserCrosswordProgressInDB,
+  doesCrosswordExistInDB,
+  doesCrosswordExistInUserDB,
 } from "../models/crosswords.js";
 import {
   getAllDictionariesFromDB,
@@ -138,22 +140,52 @@ export const getUserCrosswords = async (req, res) => {
 export const addCrosswordToLibrary = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const crosswordId = req.body.id;
+    const crosswordId = req.body.id; // ID кроссворда из общей библиотеки
+
+    // Проверяем, существует ли кроссворд с таким ID в общей библиотеке
+    const crossword = await getCrosswordToPlayByIdFromDB(crosswordId);
+    if (!crossword || !crossword.content) {
+      return res.status(404).json({ message: "Кроссворд не найден или данные отсутствуют" });
+    }
+
+    // Извлекаем название кроссворда из поля content
+    const title = crossword.content.title; 
+    if (!title) {
+      return res.status(400).json({ message: "Название кроссворда отсутствует" });
+    }
+
+    // Проверка на существование кроссворда с таким же названием в пользовательской библиотеке
+    const exists = await doesCrosswordExistInUserDB(userId, title);
+    if (exists) {
+      return res.status(400).json({ message: "Кроссворд с таким названием уже существует в вашей библиотеке" });
+    }
+
+    // Добавляем кроссворд в пользовательскую библиотеку, клонируя JSONB
     const newEntry = await addCrosswordToLibraryInDB(userId, crosswordId);
-    res.status(201).json(newEntry);
+    res.status(201).json({ message: "Кроссворд успешно добавлен в вашу библиотеку", newEntry });
   } catch (error) {
     console.error("Error adding crossword to library: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// Добавить кроссворд в библиотеку пользователя
+
+
+// Добавить кроссворд в публичную библиотеку
 export const addCrosswordToPublicLibrary = async (req, res) => {
   const crosswordData = req.body;
 
   try {
-    const dictionaryId = await saveCrosswordToPublicLibraryDB(crosswordData);
-    res.status(201).json({ message: 'Кроссворд успешно сохранен', dictionaryId });
+    const { title } = crosswordData;
+
+    // Проверка на существование кроссворда с таким названием
+    const exists = await doesCrosswordExistInDB(title);
+    if (exists) {
+      return res.status(400).json({ message: "Кроссворд с таким названием уже существует" });
+    }
+
+    const crosswordId = await saveCrosswordToPublicLibraryDB(crosswordData);
+    res.status(201).json({ message: 'Кроссворд успешно сохранен', crosswordId });
   } catch (error) {
     console.error('Ошибка при сохранении кроссворда:', error);
     res.status(500).json({ error: 'Ошибка при сохранении кроссворда' });
@@ -164,17 +196,21 @@ export const addCrosswordToPublicLibrary = async (req, res) => {
 export const deleteCrosswordFromUserLibrary = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const crosswordId = req.body.id;
+    const userCrosswordId = req.body.id; // Идентификатор кроссворда в пользовательской библиотеке
     const deletedEntry = await deleteCrosswordFromUserLibraryInDB(
       userId,
-      crosswordId
+      userCrosswordId
     );
+    if (!deletedEntry) {
+      return res.status(404).json({ message: "Кроссворд не найден" });
+    }
     res.status(200).json(deletedEntry);
   } catch (error) {
     console.error("Error deleting crossword from library: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 // Удалить кроссворд из общей библиотеки
 export const deleteCrosswordFromPublicLibrary = async (req, res) => {

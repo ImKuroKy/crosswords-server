@@ -1,5 +1,28 @@
 import pool from "../config/exports.js";
 
+// Проверить, существует ли кроссворд с указанным названием
+export const doesCrosswordExistInDB = async (title) => {
+  const query = `
+    SELECT COUNT(*) > 0 AS exists
+    FROM "crosswords"."crosswords_public"
+    WHERE title = $1
+  `;
+  const result = await pool.query(query, [title]);
+  return result.rows[0].exists;
+};
+
+// Проверить, существует ли кроссворд с таким названием в пользовательской библиотеке
+export const doesCrosswordExistInUserDB = async (userId, title) => {
+  const query = `
+    SELECT COUNT(*) > 0 AS exists
+    FROM "crosswords"."user_crosswords"
+    WHERE user_id = $1 AND crossword_content->>'title' = $2
+  `;
+  const result = await pool.query(query, [userId, title]);
+  return result.rows[0].exists;
+};
+
+
 // Получить все публичные кроссворды
 export const getCrosswordsFromDB = async () => {
   const query = 'SELECT * FROM "crosswords"."crosswords_public"';
@@ -17,25 +40,29 @@ export const getCrosswordToPlayByIdFromDB = async (crosswordId) => {
 // Получить кроссворды пользователя
 export const getUserCrosswordsFromDB = async (userId) => {
   const query = `
-    SELECT uc.user_crossword_id, cp.*
-    FROM "crosswords"."user_crosswords" uc
-    JOIN "crosswords"."crosswords_public" cp ON uc.crossword_id = cp.crossword_id
-    WHERE uc.user_id = $1
+    SELECT user_crossword_id AS id,
+           crossword_content->>'title' AS title
+    FROM "crosswords"."user_crosswords"
+    WHERE user_id = $1
   `;
   const result = await pool.query(query, [userId]);
   return result.rows;
 };
 
+
 // Добавить кроссворд в библиотеку пользователя
 export const addCrosswordToLibraryInDB = async (userId, crosswordId) => {
   const query = `
-    INSERT INTO "crosswords"."user_crosswords" (user_id, crossword_id)
-    VALUES ($1, $2)
+    INSERT INTO "crosswords"."user_crosswords" (user_id, crossword_content)
+    SELECT $1, cp.content
+    FROM "crosswords"."crosswords_public" cp
+    WHERE cp.crossword_id = $2
     RETURNING user_crossword_id
   `;
   const result = await pool.query(query, [userId, crosswordId]);
   return result.rows[0];
 };
+
 
 // Добавить кроссворд в библиотеку пользователя
 export const saveCrosswordToPublicLibraryDB = async (crosswordData) => {
@@ -61,16 +88,17 @@ export const saveCrosswordToPublicLibraryDB = async (crosswordData) => {
 // Удалить кроссворд из библиотеки пользователя
 export const deleteCrosswordFromUserLibraryInDB = async (
   userId,
-  crosswordId
+  userCrosswordId
 ) => {
   const query = `
     DELETE FROM "crosswords"."user_crosswords"
-    WHERE user_id = $1 AND crossword_id = $2
+    WHERE user_id = $1 AND user_crossword_id = $2
     RETURNING user_crossword_id
   `;
-  const result = await pool.query(query, [userId, crosswordId]);
+  const result = await pool.query(query, [userId, userCrosswordId]);
   return result.rows[0];
 };
+
 
 // Удалить кроссворд из общей библиотеки
 export const deleteCrosswordFromPublicLibraryInDB = async (crosswordId) => {
