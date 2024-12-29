@@ -30,8 +30,19 @@ export const getCrosswordsFromDB = async () => {
   return result.rows;
 };
 
+// Получить кроссворд по id из пользовательской библиотеки
+export const getCrosswordToPlayByIdFromDB = async (userCrosswordId) => {
+  const query = `
+    SELECT crossword_content AS content
+    FROM "crosswords"."user_crosswords"
+    WHERE user_crossword_id = $1
+  `;
+  const result = await pool.query(query, [userCrosswordId]);
+  return result.rows[0];
+};
+
 // Получить кроссворд по id
-export const getCrosswordToPlayByIdFromDB = async (crosswordId) => {
+export const getCrosswordIdFromDB = async (crosswordId) => {
   const query = 'SELECT "content" FROM "crosswords"."crosswords_public" WHERE crossword_id = $1';
   const result = await pool.query(query, [crosswordId]);
   return result.rows[0];

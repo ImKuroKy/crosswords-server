@@ -10,6 +10,7 @@ import {
   updateUserCrosswordProgressInDB,
   doesCrosswordExistInDB,
   doesCrosswordExistInUserDB,
+  getCrosswordIdFromDB,
 } from "../models/crosswords.js";
 import {
   getAllDictionariesFromDB,
@@ -32,15 +33,22 @@ export const getAllDictionaries = async (req, res) => {
 
 // Получение кроссворда по Id
 export const getCrosswordToPlayById = async (req, res) => {
-  const crosswordId = req.params.crosswordId;  // Получаем ID из параметров
+  const crosswordId = req.params.crosswordId; // Получаем ID из параметров
   try {
+    // Получаем кроссворд из пользовательской библиотеки
     const crossword = await getCrosswordToPlayByIdFromDB(crosswordId);
-    res.json({ crossword });
+    console.log('Fetched crossword:', crossword); 
+    if (!crossword) {
+      return res.status(404).json({ message: "Кроссворд не найден" });
+    }
+
+    res.json(crossword.content); // Возвращаем только содержимое кроссворда
   } catch (error) {
+    console.error("Error fetching crossword:", error);
     res.status(500).json({ message: "Ошибка при получении кроссворда" });
-    console.log(error);
   }
 };
+
 
 
 // Получение содержимого словаря по имени
@@ -141,9 +149,11 @@ export const addCrosswordToLibrary = async (req, res) => {
   try {
     const userId = req.user.userId;
     const crosswordId = req.body.id; // ID кроссворда из общей библиотеки
-
+    console.log(crosswordId)
+    
     // Проверяем, существует ли кроссворд с таким ID в общей библиотеке
-    const crossword = await getCrosswordToPlayByIdFromDB(crosswordId);
+    const crossword = await getCrosswordIdFromDB(crosswordId);
+    console.log(crossword)
     if (!crossword || !crossword.content) {
       return res.status(404).json({ message: "Кроссворд не найден или данные отсутствуют" });
     }
