@@ -13,7 +13,9 @@ import {
   getAllDictionaries,
   getDictionaryByName,
   postDictionary,
-  deleteDictionary
+  deleteDictionary,
+  getUserInputs,
+  postUserInputs,
 } from '../controllers/crosswordsController.js';
 import authenticateJWT from "../middleware/authenticateJWT.js";
 import multer from 'multer';
@@ -31,6 +33,8 @@ router.post('/user/library', authenticateJWT, addCrosswordToLibrary);
 router.delete('/user/library', authenticateJWT, deleteCrosswordFromUserLibrary);
 router.get('/user/library/progress/:id', authenticateJWT, getUserCrosswordProgress);
 router.put('/user/library/progress/:id', authenticateJWT, updateUserCrosswordProgress);
+router.get('/get/save/:id', authenticateJWT, getUserInputs);
+router.post('/save/:id', authenticateJWT, postUserInputs);
 
 router.get('/dictionaries', authenticateJWT, getAllDictionaries);
 router.get('/dictionaries/:name', authenticateJWT, getDictionaryByName);

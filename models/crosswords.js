@@ -22,6 +22,40 @@ export const doesCrosswordExistInUserDB = async (userId, title) => {
   return result.rows[0].exists;
 };
 
+// Получить сохраненный прогресс из БД
+export const getCrosswordWithProgressFromDB = async (userCrosswordId) => {
+  const query = `
+    SELECT
+      progress.progress AS user_progress
+    FROM crosswords.crossword_progress progress
+    WHERE progress.user_crossword_id = $1
+  `;
+  const result = await pool.query(query, [userCrosswordId]);
+
+  console.log('Raw query result:', result.rows); // Логируем необработанные данные
+
+  return result.rows[0];
+};
+
+
+
+
+// Сохранить прогресс пользователя в БД
+export const saveUserCrosswordProgressInDB = async (userCrosswordId, grid) => {
+  const query = `
+    INSERT INTO crosswords.crossword_progress (user_crossword_id, progress)
+    VALUES ($1, $2::jsonb)
+    ON CONFLICT (user_crossword_id) DO UPDATE
+    SET progress = EXCLUDED.progress
+    RETURNING progress_id;
+  `;
+  const result = await pool.query(query, [userCrosswordId, JSON.stringify(grid)]);
+  return result.rows[0];
+};
+
+
+
+
 
 // Получить все публичные кроссворды
 export const getCrosswordsFromDB = async () => {

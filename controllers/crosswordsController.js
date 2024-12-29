@@ -11,6 +11,8 @@ import {
   doesCrosswordExistInDB,
   doesCrosswordExistInUserDB,
   getCrosswordIdFromDB,
+  getCrosswordWithProgressFromDB,
+  saveUserCrosswordProgressInDB,
 } from "../models/crosswords.js";
 import {
   getAllDictionariesFromDB,
@@ -20,6 +22,55 @@ import {
 } from "../models/dictionary.js";
 import fs from "fs/promises";
 import path from "path";
+
+
+
+
+// Получение всех сохраненных пользовательских данных прогресса решения кроссворда
+export const getUserInputs = async (req, res) => {
+  const crosswordId = req.params.id; // Получаем ID кроссворда
+  console.log('Received crosswordId:', crosswordId); // Логируем ID
+
+  try {
+    const result = await getCrosswordWithProgressFromDB(crosswordId);
+    console.log('Query result:', result); // Логируем результат запроса
+
+    if (!result || !result.user_progress) {
+      console.log('No progress found or progress is null for crosswordId:', crosswordId);
+      return res.status(200).json({ userProgress: null });
+    }
+
+    res.status(200).json({
+      grid: result.user_progress, // Возвращаем весь JSON из progress
+    });
+  } catch (error) {
+    console.error("Error fetching crossword with progress:", error);
+    res.status(500).json({ message: "Ошибка при получении кроссворда или прогресса" });
+  }
+};
+
+// Отправка всех сохраненных пользовательских данных прогресса решения кроссворда
+export const postUserInputs = async (req, res) => {
+  const userCrosswordId = req.params.id; // ID пользовательского кроссворда
+  const { grid } = req.body; // JSON с прогрессом
+
+  try {
+    if (!grid || !Array.isArray(grid)) {
+      return res.status(400).json({ message: "Некорректные данные прогресса: отсутствует grid или он имеет неправильный формат" });
+    }
+
+    const savedProgress = await saveUserCrosswordProgressInDB(userCrosswordId, grid);
+
+    res.status(200).json({
+      message: "Прогресс успешно сохранён",
+      progressId: savedProgress.progress_id,
+    });
+  } catch (error) {
+    console.error("Error saving crossword progress:", error);
+    res.status(500).json({ message: "Ошибка при сохранении прогресса" });
+  }
+};
+
 
 // Получение всех словарей
 export const getAllDictionaries = async (req, res) => {
@@ -37,7 +88,6 @@ export const getCrosswordToPlayById = async (req, res) => {
   try {
     // Получаем кроссворд из пользовательской библиотеки
     const crossword = await getCrosswordToPlayByIdFromDB(crosswordId);
-    console.log('Fetched crossword:', crossword); 
     if (!crossword) {
       return res.status(404).json({ message: "Кроссворд не найден" });
     }
