@@ -53,8 +53,25 @@ export const saveUserCrosswordProgressInDB = async (userCrosswordId, grid) => {
   return result.rows[0];
 };
 
+// Сохранить измененный кроссворд в БД
+export const updateCrosswordInDB = async (crosswordId, crosswordData) => {
+  const query = `
+    UPDATE crosswords.crosswords_public
+    SET 
+      title = $1,
+      content = $2
+    WHERE crossword_id = $3
+    RETURNING crossword_id;
+  `;
+  const values = [
+    crosswordData.title,
+    JSON.stringify(crosswordData),
+    crosswordId
+  ];
 
-
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
 
 
 // Получить все публичные кроссворды
@@ -74,6 +91,7 @@ export const getCrosswordToPlayByIdFromDB = async (userCrosswordId) => {
   const result = await pool.query(query, [userCrosswordId]);
   return result.rows[0];
 };
+
 
 // Получить кроссворд по id
 export const getCrosswordIdFromDB = async (crosswordId) => {

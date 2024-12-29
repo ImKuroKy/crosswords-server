@@ -13,7 +13,8 @@ import {
   getCrosswordIdFromDB,
   getCrosswordWithProgressFromDB,
   saveUserCrosswordProgressInDB,
-} from "../models/crosswords.js";
+  updateCrosswordInDB,
+  } from "../models/crosswords.js";
 import {
   getAllDictionariesFromDB,
   getDictionaryContentByNameFromDB,
@@ -33,7 +34,6 @@ export const getUserInputs = async (req, res) => {
 
   try {
     const result = await getCrosswordWithProgressFromDB(crosswordId);
-    console.log('Query result:', result); // Логируем результат запроса
 
     if (!result || !result.user_progress) {
       console.log('No progress found or progress is null for crosswordId:', crosswordId);
@@ -82,7 +82,7 @@ export const getAllDictionaries = async (req, res) => {
   }
 };
 
-// Получение кроссворда по Id
+// Получение кроссворда по Id для игры
 export const getCrosswordToPlayById = async (req, res) => {
   const crosswordId = req.params.crosswordId; // Получаем ID из параметров
   try {
@@ -98,6 +98,27 @@ export const getCrosswordToPlayById = async (req, res) => {
     res.status(500).json({ message: "Ошибка при получении кроссворда" });
   }
 };
+
+// Получение кроссворда по Id для редактирования
+export const getCrosswordToEditById = async (req, res) => {
+  const crosswordId = req.params.crosswordId; // Получаем ID из параметров
+  console.log('Received crosswordId:', crosswordId); // Логируем ID
+
+  try {
+    const crossword = await getCrosswordIdFromDB(crosswordId);
+
+    if (!crossword) {
+      return res.status(404).json({ message: "Кроссворд не найден" });
+    }
+
+    console.log('Crossword content:', crossword.content); // Логируем содержимое кроссворда
+    res.json(crossword.content); // Возвращаем содержимое кроссворда
+  } catch (error) {
+    console.error("Error fetching crossword:", error);
+    res.status(500).json({ message: "Ошибка при получении кроссворда" });
+  }
+};
+
 
 
 
@@ -226,6 +247,32 @@ export const addCrosswordToLibrary = async (req, res) => {
   } catch (error) {
     console.error("Error adding crossword to library: ", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Сохранить изменённый кроссворд в общей библиотеке
+export const postEditedCrossword = async (req, res) => {
+  const crosswordId = req.params.crosswordId;
+  const crosswordData = req.body;
+
+  try {
+    if (!crosswordData || !crosswordData.title || !crosswordData.grid || !crosswordData.words) {
+      return res.status(400).json({ message: "Некорректные данные кроссворда" });
+    }
+
+    const updatedCrossword = await updateCrosswordInDB(crosswordId, crosswordData);
+
+    if (!updatedCrossword) {
+      return res.status(404).json({ message: "Кроссворд не найден" });
+    }
+
+    res.status(200).json({
+      message: "Кроссворд успешно обновлён",
+      crosswordId: updatedCrossword.crossword_id,
+    });
+  } catch (error) {
+    console.error("Error updating crossword:", error);
+    res.status(500).json({ message: "Ошибка при обновлении кроссворда" });
   }
 };
 
