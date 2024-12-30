@@ -162,6 +162,18 @@ export const deleteCrosswordFromUserLibraryInDB = async (
   return result.rows[0];
 };
 
+// Удалить прогресс пользователя
+export const deleteUserCrosswordProgressInDB = async (userCrosswordId) => {
+  const query = `
+    DELETE FROM "crosswords"."crossword_progress"
+    WHERE user_crossword_id = $1
+    RETURNING progress_id
+  `;
+  const result = await pool.query(query, [userCrosswordId]);
+  return result.rows[0];
+};
+
+
 
 // Удалить кроссворд из общей библиотеки
 export const deleteCrosswordFromPublicLibraryInDB = async (crosswordId) => {

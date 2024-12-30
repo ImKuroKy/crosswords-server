@@ -13,6 +13,7 @@ import {
   getCrosswordIdFromDB,
   getCrosswordWithProgressFromDB,
   saveUserCrosswordProgressInDB,
+  deleteUserCrosswordProgressInDB,
   updateCrosswordInDB,
   } from "../models/crosswords.js";
 import {
@@ -304,14 +305,30 @@ export const deleteCrosswordFromUserLibrary = async (req, res) => {
   try {
     const userId = req.user.userId;
     const userCrosswordId = req.body.id; // Идентификатор кроссворда в пользовательской библиотеке
-    const deletedEntry = await deleteCrosswordFromUserLibraryInDB(
-      userId,
-      userCrosswordId
-    );
-    if (!deletedEntry) {
-      return res.status(404).json({ message: "Кроссворд не найден" });
+
+    try {
+      // Попытка удалить кроссворд
+      const deletedEntry = await deleteCrosswordFromUserLibraryInDB(userId, userCrosswordId);
+      if (!deletedEntry) {
+        return res.status(404).json({ message: "Кроссворд не найден" });
+      }
+      res.status(200).json(deletedEntry);
+    } catch (error) {
+      // Если возникло нарушение внешнего ключа, удаляем прогресс
+      if (error.code === "23503") {
+        console.error("Foreign key violation, deleting user progress first...");
+        await deleteUserCrosswordProgressInDB(userCrosswordId);
+
+        // Повторная попытка удалить кроссворд
+        const deletedEntry = await deleteCrosswordFromUserLibraryInDB(userId, userCrosswordId);
+        if (!deletedEntry) {
+          return res.status(404).json({ message: "Кроссворд не найден" });
+        }
+        res.status(200).json(deletedEntry);
+      } else {
+        throw error;
+      }
     }
-    res.status(200).json(deletedEntry);
   } catch (error) {
     console.error("Error deleting crossword from library: ", error);
     res.status(500).json({ error: "Internal server error" });
